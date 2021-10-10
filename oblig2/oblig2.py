@@ -1,61 +1,62 @@
 import csv
+import time
+import json
+import sys
+
 print("Oppgave 1")
+start = time.time()
 
-# actor_tsv = open("actors.tsv")
-actor_tsv = open("actors_short.tsv")
+def checkTime(startTime):
+    now = time.time()
+    print(now - startTime)
+
+def countNodes(graph):
+    print('Number of nodes:', len(graph))
+
+def countEdges(graph):
+    print('Number of edges:', sum(len(dct['edges']) for dct in graph.values())/2)
+
+def prettyPrintGraph(graph):
+    print(json.dumps(graph, sort_keys=True, indent=4))
+
+short = True if (len(sys.argv)>1 and sys.argv[1]=='short') else False
+actor_tsv = open("actors_short.tsv") if short else open("actors.tsv")
 actors = csv.reader(actor_tsv, delimiter="\t")
-actors_arr = []
-for row in actors:
-    actors_arr.append(row)
-
-# movies_tsv = open("movies.tsv")
-movies_tsv = open("movies_short.tsv")
+movies_tsv = open("movies_short.tsv") if short else open("movies.tsv")
 movies = csv.reader(movies_tsv, delimiter="\t")
+actorGraph = {}
 
-num_of_actors = len(actors_arr)
-print('Number of actors:', num_of_actors)
+print("creating actors")
+for row in actors:
+    actorGraph[row[0]] = {"movies" : row[2:], "edges":[]}
+checkTime(start)
 
-print('Initiliazing matrix')
-# row = [[]]*num_of_actors
-Matrix = [[[] for j in range(num_of_actors)] for i in range(num_of_actors)]
-print('Done initiliazing matrix')
-
-movies_arr = []
+movieGraph = {}
+print("creating movies")
 for row in movies:
-    movies_arr.append(row)
+    movieGraph[row[0]] = {"title":row[1], "rating":row[2], "actors":[]}
+checkTime(start)
 
-def findMovie(mov, movies):
-    for movie in movies:
-        if movie[0] == mov:
-            return movie
+print("creating movieset")
+movieSet = set(movieGraph.keys())
+checkTime(start)
 
-'''
-For hver actor (actor1), gå igjennom alle andre actors (actor2) 
-og legg til alle felles filmer i matrisen på actor2.
-'''
+print("Adding actors to movies")
+for actor in actorGraph:
+    for movie in actorGraph[actor]["movies"]:
+        if movie in movieSet:
+            movieGraph[movie]["actors"].append(actor)
+checkTime(start)
 
-def prettyPrintMatrix(m):
-    s = [[str(e) for e in row] for row in m]
-    lens = [max(map(len, col)) for col in zip(*s)]
-    fmt = '\t'.join('{{:{}}}'.format(x) for x in lens)
-    table = [fmt.format(*row) for row in s]
-    print('\n'.join(table))
-
-for actor_i, actor in enumerate(actors_arr):
-    actor_movies = actor[2:]
-    for actor_i2, actor2 in enumerate(actors_arr):
-        if(actor_i == actor_i2):
-            continue
-        actor2_movies = actor2[2:]
-        
-        for mov in actor2_movies:
-            if(mov in actor_movies):
-                prettyPrintMatrix(Matrix)
-                movie = findMovie(mov, movies_arr)
-                print('moviename:', movie[1])
-                print(actor_i2, actor_i)
-                Matrix[actor_i2][actor_i].append(movie[0])
-                Matrix[actor_i2][actor_i].append(movie[2])
-
-prettyPrintMatrix(Matrix)
-
+print("Adding edges")
+for key, value in movieGraph.items():
+    for actor1 in value['actors']:
+        for actor2 in value['actors']:
+            if actor1==actor2:
+                continue 
+            actorGraph[actor1]["edges"].append({"actorId":actor2, "movieid":movie, "rating":value["rating"]})
+checkTime(start)
+countNodes(actorGraph)
+countEdges(actorGraph)
+if short:
+    prettyPrintGraph(actorGraph)
