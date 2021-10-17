@@ -28,7 +28,7 @@ actorGraph = {}
 
 print("creating actors")
 for row in actors:
-    actorGraph[row[0]] = {"movies" : row[2:], "edges":[]}
+    actorGraph[row[0]] = {"movies" : row[2:], "edges":[], "name":row[1]}
 checkTime(start)
 
 movieGraph = {}
@@ -54,19 +54,18 @@ for key, value in movieGraph.items():
         for actor2 in value['actors']:
             if actor1==actor2:
                 continue 
-            actorGraph[actor1]["edges"].append({"actorId":actor2, "movieid":movie, "rating":value["rating"]})
+            actorGraph[actor1]["edges"].append({"actorId":actor2, "movieId":key, 'movieTitle': value['title'], "rating":value["rating"]})
 checkTime(start)
 countNodes(actorGraph)
 countEdges(actorGraph)
 if short:
     prettyPrintGraph(actorGraph)
 
-
 # OPPG 2
 print('Oppgave 2')
 def dijkstra(graph, startNodeId, endNodeId):
-    path_lengths = {node_id: float('inf') for node_id in graph}
-    path_lengths[startNodeId] = 0
+    path_lengths = {node_id: {'dist': float('inf'), 'path': [startNodeId]} for node_id in graph}
+    path_lengths[startNodeId]['dist'] = 0
     path_stack = {}
     leftToVisit = {node for node in graph}
     leftToVisit.remove(startNodeId)
@@ -74,28 +73,41 @@ def dijkstra(graph, startNodeId, endNodeId):
 
     neighbours = [node['actorId'] for node in graph[startNodeId]['edges']]
     for neighbour in neighbours:
-        path_lengths[neighbour] = 1
+        if neighbour in path_lengths[neighbour]['path']:
+            continue
+        path_lengths[neighbour]['dist'] = 1
         path_stack[neighbour]= 1
+        path_lengths[neighbour]['path'].append(neighbour)
     i= 0
     while i < len(leftToVisit):
         i+=1
         nextNode = min(path_stack, key=path_stack.get)
-        nextNodeDist = path_lengths[nextNode]
+        nextNodeDist = path_lengths[nextNode]['dist']
         neighbours = [node['actorId'] for node in graph[nextNode]['edges']]
         for neighbour in neighbours:
             if neighbour in visited:
                 continue
             try:
-                path_lengths[neighbour] = min(nextNodeDist+1, path_lengths[neighbour])
+                if nextNodeDist+1 < path_lengths[neighbour]['dist']:
+                    path_lengths[neighbour]['dist'] = nextNodeDist+1
+                    path_lengths[neighbour]['path'] = list(path_lengths[nextNode]['path'])
+                    path_lengths[neighbour]['path'].append(neighbour)
                 if neighbour == endNodeId:
-                    print(neighbour, path_lengths[neighbour])
-                    return ''
+                    return path_lengths[neighbour]
                 path_stack[neighbour] = 1
             except:
                 print('Nope:', neighbour)
-        print('AFTER path_lengths',path_lengths)
         visited.add(nextNode)
         del path_stack[nextNode]
 
+def printSolutionTask2(solution, graph):
+    for index, actor in enumerate(solution['path']):
+        if index < len(solution['path'])-1:
+            commonEdges = [edge for edge in graph[actor]['edges'] if edge["actorId"] == solution['path'][index+1]][0]
+            commonMovie = commonEdges['movieTitle']
+            commonMovieId = [edge for edge in graph[actor]['edges'] if edge["actorId"] == solution['path'][index+1]][0]['movieId']
+            print(graph[actor]['name'], '(', actor,')', 'via the movie', commonMovie, '(', commonMovieId,')', 'to', graph[solution['path'][index+1]]['name'])
 
-dijkstra(actorGraph, 'nm0000001', 'nm0000006')
+# solution = dijkstra(actorGraph, 'nm0000001', 'nm0000006')
+solution = dijkstra(actorGraph, 'nm0031483', 'nm0931324')
+printSolutionTask2(solution, actorGraph)
