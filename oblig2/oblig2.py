@@ -60,3 +60,42 @@ countNodes(actorGraph)
 countEdges(actorGraph)
 if short:
     prettyPrintGraph(actorGraph)
+
+
+# OPPG 2
+print('Oppgave 2')
+def dijkstra(graph, startNodeId, endNodeId):
+    path_lengths = {node_id: float('inf') for node_id in graph}
+    path_lengths[startNodeId] = 0
+    path_stack = {}
+    leftToVisit = {node for node in graph}
+    leftToVisit.remove(startNodeId)
+    visited = {startNodeId}
+
+    neighbours = [node['actorId'] for node in graph[startNodeId]['edges']]
+    for neighbour in neighbours:
+        path_lengths[neighbour] = 1
+        path_stack[neighbour]= 1
+    i= 0
+    while i < len(leftToVisit):
+        i+=1
+        nextNode = min(path_stack, key=path_stack.get)
+        nextNodeDist = path_lengths[nextNode]
+        neighbours = [node['actorId'] for node in graph[nextNode]['edges']]
+        for neighbour in neighbours:
+            if neighbour in visited:
+                continue
+            try:
+                path_lengths[neighbour] = min(nextNodeDist+1, path_lengths[neighbour])
+                if neighbour == endNodeId:
+                    print(neighbour, path_lengths[neighbour])
+                    return ''
+                path_stack[neighbour] = 1
+            except:
+                print('Nope:', neighbour)
+        print('AFTER path_lengths',path_lengths)
+        visited.add(nextNode)
+        del path_stack[nextNode]
+
+
+dijkstra(actorGraph, 'nm0000001', 'nm0000006')
