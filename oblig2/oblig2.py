@@ -63,6 +63,7 @@ if short:
 
 # OPPG 2
 print('Oppgave 2')
+start2 = time.time()
 def dijkstra(graph, startNodeId, endNodeId):
     path_lengths = {node_id: {'dist': float('inf'), 'path': [startNodeId]} for node_id in graph}
     path_lengths[startNodeId]['dist'] = 0
@@ -110,10 +111,12 @@ def printSolutionTask2(solution, graph):
 
 # solution = dijkstra(actorGraph, 'nm0000001', 'nm0000006')
 solution = dijkstra(actorGraph, 'nm0031483', 'nm0931324')
+checkTime(start2)
 printSolutionTask2(solution, actorGraph)
 
 
 print('Oppg3')
+'''
 def printSolutionTask3(solution, graph):
     totalWeight = 0
     for index, actor in enumerate(solution['path']):
@@ -128,6 +131,49 @@ def printSolutionTask3(solution, graph):
 
 
 def dijkstraWeighted(graph, startNodeId, endNodeId):
+    prettyPrintGraph(graph)
+    path_lengths = {node: float('inf') for node in graph}
+    nodeUpdatedFrom = {startNodeId:startNodeId}
+    path_lengths[startNodeId] = 0
+    stack = []
+
+    neighbourEdges = graph[startNodeId]['edges']
+    neighbourActors = set([node['actorId'] for node in graph[startNodeId]['edges']])
+
+    for actorId in neighbourActors:
+        actorEdges = [node for node in neighbourEdges if node['actorId'] == actorId]
+        edge = max(actorEdges, key=lambda x:x['rating'])
+        path_lengths[actorId] = 10 - float(edge['rating'])
+        nodeUpdatedFrom[actorId] = startNodeId
+        stack.append({'actorId': actorId, "weight": 10 - float(edge['rating'])})
+    
+    while path_lengths[endNodeId] == float('inf'):
+        nextNode = min(stack, key=lambda x:x['weight'])
+        nextNodeId = nextNode['actorId']
+        nextNodeNeighbourEdges = graph[nextNodeId]['edges']
+        neighbourActors = set([node['actorId'] for node in graph[nextNodeId]['edges']])
+        for actorId in neighbourActors:
+            #If actorId is where we came from, continue
+            if actorId == nodeUpdatedFrom[nextNodeId]:
+                continue
+            actorEdges = [node for node in neighbourEdges if node['actorId'] == actorId]
+            print(actorEdges )
+            edge = max(actorEdges, key=lambda x:x['rating'])
+            
+            if (path_lengths[nextNode] + (10 - float(edge['rating']))) < path_lengths[actorId]:
+                path_lengths[actorId] = path_lengths[nextNode] + (10 - float(edge['rating']))
+                nodeUpdatedFrom[actorId] = nextNodeId
+
+            stack.append({'actorId': actorId, "weight": 10 - float(edge['rating'])})
+            stack[:] = [d for d in stack if d.get('actorId') != nextNodeId]
+
+        print(nextNodeNeighbourEdges)
+
+
+
+solution = dijkstraWeighted(actorGraph, 'nm0000001', 'nm0000006')
+# solution = dijkstraWeighted(actorGraph, 'nm2255973', 'nm0000460')
+def dijkstraWeighted(graph, startNodeId, endNodeId):
     # prettyPrintGraph(graph)
     path_lengths = {node_id: {'dist': float('inf'), 'path': [startNodeId]} for node_id in graph}
     path_lengths[startNodeId]['dist'] = 0
@@ -136,44 +182,101 @@ def dijkstraWeighted(graph, startNodeId, endNodeId):
     leftToVisit.remove(startNodeId)
     visited = {startNodeId}
 
-    neighbours = [{"actorId": node['actorId'], "weight": 10-float(node['rating'])} for node in graph[startNodeId]['edges']]
+    neighbourEdges = graph[startNodeId]['edges']
+    neighbourActors = set([node['actorId'] for node in graph[startNodeId]['edges']])
+    neighbours = []
+    for node in neighbourActors:
+        relevantNodes = [stuff for stuff in neighbourEdges if stuff['actorId']==node]
+        myNode = max(relevantNodes, key=lambda x:x['rating'])
+        neighbours.append(myNode)
+
+    print(neighbours)
+    # print('startedgeds', graph[startNodeId]['edges'])
+
+    # next(item for item in neighbourEdges if item["name"] == "Pam")
+
     for neighbour in neighbours:
         if neighbour['actorId'] in path_lengths[neighbour['actorId']]['path']:
             continue
-        path_lengths[neighbour['actorId']]['dist'] = neighbour['weight']
-        path_stack[neighbour['actorId']]= neighbour
+        path_lengths[neighbour['actorId']]['dist'] = 10 - float(neighbour['rating'])
+        path_stack[neighbour['actorId']]= 10-float(neighbour['rating'])
         path_lengths[neighbour['actorId']]['path'].append(neighbour['actorId'])
     i= 0
     while i < len(leftToVisit):
         i+=1
-        pathStackList = [{"weight":path_stack[key]['weight'], "id": key} for key in path_stack]
-        nextNode = min(pathStackList, key=lambda x:x['weight'])['id']
-        nextNodeDist = path_lengths[nextNode]['dist']
-        neighbours = [{"actorId":node['actorId'], "weight": 10-float(node['rating'])} for node in graph[nextNode]['edges']]
-        for neighbour in neighbours:
-            if neighbour['actorId'] in visited:
+        print(path_stack)
+        nextNode = min(path_stack, key=path_stack.get)
+        nextNodeDist= path_stack[nextNode]
+        nextNodeDist = graph[nextNode]
+
+        neighbourEdges = graph[nextNode]['edges']
+        neighbourActors = set([node['actorId'] for node in graph[startNodeId]['edges']])
+        neighbours = []
+        for node in neighbourActors:
+            if node in path_lengths[node]['path']:
                 continue
-            neighbourWeight = neighbour['weight']
-            if nextNodeDist+neighbourWeight < path_lengths[neighbour['actorId']]['dist']:
-                path_lengths[neighbour['actorId']]['dist'] = nextNodeDist+neighbourWeight
-                path_lengths[neighbour['actorId']]['path'] = list(path_lengths[nextNode]['path'])
-                path_lengths[neighbour['actorId']]['path'].append(neighbour['actorId'])
-            if neighbour['actorId'] == endNodeId:
-                return path_lengths[neighbour['actorId']]
-            path_stack[neighbour['actorId']] = neighbour
+            relevantNodes = [stuff for stuff in neighbourEdges if stuff['actorId']==node]
+            myNode = max(relevantNodes, key=lambda x:x['rating'])
+            neighbours.append(myNode)
+
+            for neighbour in neighbours:
+                print('neighbour',neighbour)
+                neighbourWeight = neighbour['weight']
+                if neighbour['actorId'] in visited:
+                    if nextNodeDist+neighbourWeight < path_lengths[neighbour['actorId']]['dist']:
+                        path_lengths[neighbour['actorId']]['dist'] = nextNodeDist+neighbourWeight
+                    continue
+                if nextNodeDist+neighbourWeight < path_lengths[neighbour['actorId']]['dist']:
+                    path_lengths[neighbour['actorId']]['dist'] = nextNodeDist+neighbourWeight
+                    path_lengths[neighbour['actorId']]['path'] = list(path_lengths[nextNode]['path'])
+                    path_lengths[neighbour['actorId']]['path'].append(neighbour['actorId'])
+                if neighbour['actorId'] == endNodeId:
+                    return path_lengths[neighbour['actorId']]
+                path_stack[neighbour['actorId']] = neighbour
         visited.add(nextNode)
         del path_stack[nextNode]
 
+def getBestEdges(edges):
+    neighbourActors = set([node['actorId'] for node in edges])
+    neighbours = []
+    for node in neighbourActors:
+        relevantNodes = [stuff for stuff in edges if stuff['actorId']==node]
+        myNode = max(relevantNodes, key=lambda x:x['rating'])
+        neighbours.append(myNode)
+    return neighbours
 
-'''
-nm2255973 nm0000460 Donald Glover Jeremy Irons
-nm0424060 nm0000243 Scarlett Johansson Denzel Washington
-nm4689420 nm0000365 Carrie Coon Julie Delpy
-nm0000288 nm0001401 Christian Bale Angelina Jolie
-nm0031483 nm0931324 Atle Antonsen Michael K. Williams
-'''
+def dijkstraWeighted(graph, startNodeId, endNodeId):
+    path_lengths = {node_id: { 'dist': float('inf'), 'path': [startNodeId]} for node_id in graph}
+    path_lengths[startNodeId] = 0
+    stack = []
+    visited = []
+    
+    neighbours = getBestEdges(graph[startNodeId]['edges'])
+    for neighbour in neighbours:
+        stack.append(neighbour)
+        # add if actually shorter check for general application
+        path_lengths[neighbour['actorId']]['dist'] = 10 - float(neighbour['rating'])
+    visited.append(startNodeId)
+    i=0
+    while i<1:
+        i = i+1
+        nextNode = max(stack, key=lambda x:float(x['rating']))
+        neighbours = getBestEdges(graph[nextNode['actorId']]['edges'])
+        for neighbour in neighbours:
+            if neighbour['actorId'] in visited:
+                continue
+            stack.append(neighbour)
+            # add if actually shorter check for general application
+            currentDist = path_lengths[neighbour['actorId']]['dist']
+            edgeDist = 10-float(neighbour['rating'])
+            if path_lengths[nextNode['actorId']]['dist'] + edgeDist < currentDist:
+                path_lengths[neighbour['actorId']]['dist'] =path_lengths[nextNode['actorId']]['dist'] + 10 - float(neighbour['rating'])
+        stack = [node for node in stack if node['actorId']!=nextNode['actorId'] ]
 
+        print('STAAAACK',stack)
 
 solution = dijkstraWeighted(actorGraph, 'nm0000001', 'nm0000006')
-solution = dijkstraWeighted(actorGraph, 'nm2255973', 'nm0000460')
-printSolutionTask3(solution, actorGraph)
+# solution = dijkstraWeighted(actorGraph, 'nm2255973', 'nm0000460')
+
+# printSolutionTask3(solution, actorGraph)
+'''
